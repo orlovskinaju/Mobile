@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
   void _clearSearch() {
     setState(() {
       _search = "";
-      _searchController.clear();
+      _searchController.clear();  
       _offset = 0;
       _dogData.clear();
       _isSearching = false;
