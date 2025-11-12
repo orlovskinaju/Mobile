@@ -3,7 +3,7 @@ import 'package:animais_estimacao/database/model/pet_model.dart';
 import 'package:animais_estimacao/database/helper/pet_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/services.dart'; // ADICIONAR ESTE IMPORT
+import 'package:flutter/services.dart'; 
 
 class PetPage extends StatefulWidget {
   final Pet? pet;

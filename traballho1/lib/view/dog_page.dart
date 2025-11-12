@@ -55,7 +55,6 @@ class DogPage extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       body: Stack(
         children: [
-          // Imagem principal
           Positioned.fill(
             child: Image.network(
               imageUrl,
@@ -170,8 +169,6 @@ class DogPage extends StatelessWidget {
               );
             },
           ),
-
-          // Nome da raça no topo (sobre imagem)
           Positioned(
             top: 80,
             left: 0,
