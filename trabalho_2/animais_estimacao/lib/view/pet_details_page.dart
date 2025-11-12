@@ -16,7 +16,11 @@ class PetDetailsPage extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(pet.nome),
-        titleTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
         centerTitle: true,
         backgroundColor: Colors.purple,
         elevation: 4,

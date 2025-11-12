@@ -3,6 +3,7 @@ import 'package:animais_estimacao/database/model/pet_model.dart';
 import 'package:animais_estimacao/database/helper/pet_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart'; // ADICIONAR ESTE IMPORT
 
 class PetPage extends StatefulWidget {
   final Pet? pet;
@@ -28,7 +29,13 @@ class _PetPageState extends State<PetPage> {
   bool _isSaving = false;
   Pet? _editPet;
 
-  final List<String> _especies = ["Cachorro", "Gato", "Pássaro", "Peixe"];
+  final List<String> _especies = [
+    "Cachorro",
+    "Gato",
+    "Pássaro",
+    "Peixe",
+    "Outro",
+  ];
   final List<String> _sexos = ["Macho", "Fêmea"];
 
   @override
@@ -60,22 +67,29 @@ class _PetPageState extends State<PetPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isSaving = true);
 
-      _editPet!
-        ..nome = _nameController.text
-        ..raca = _racaController.text
-        ..idade = _idadeController.text
-        ..especie = _selectedEspecie ?? ""
-        ..sexo = _selectedSexo ?? ""
-        ..foto = _imagePath;
+      try {
+        _editPet!
+          ..nome = _nameController.text.trim()
+          ..raca = _racaController.text.trim()
+          ..idade = _idadeController.text.trim()
+          ..especie = _selectedEspecie ?? ""
+          ..sexo = _selectedSexo ?? ""
+          ..foto = _imagePath;
 
-      if (_editPet!.id != null) {
-        await helper.updatePet(_editPet!);
-      } else {
-        await helper.savePet(_editPet!);
+        if (_editPet!.id != null) {
+          await helper.updatePet(_editPet!);
+        } else {
+          await helper.savePet(_editPet!);
+        }
+
+        Navigator.pop(context, _editPet);
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Erro ao salvar: $e")));
+      } finally {
+        setState(() => _isSaving = false);
       }
-
-      setState(() => _isSaving = false);
-      Navigator.pop(context, _editPet);
     }
   }
 
@@ -88,9 +102,8 @@ class _PetPageState extends State<PetPage> {
           _editPet!.id == null ? "Novo Pet" : "Editar Pet",
           style: const TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold
-            ),
-          
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.purple,
@@ -98,12 +111,22 @@ class _PetPageState extends State<PetPage> {
       ),
       body: _isSaving
           ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "Salvando...",
+                    style: TextStyle(color: Colors.purple, fontSize: 16),
+                  ),
+                ],
               ),
             )
           : SingleChildScrollView(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -125,6 +148,14 @@ class _PetPageState extends State<PetPage> {
                             : null,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _imagePath == null ? "Adicionar Foto" : "Alterar Foto",
+                      style: TextStyle(
+                        color: Colors.purple.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: 25),
                     _buildTextField(_nameController, "Nome", Icons.pets),
                     const SizedBox(height: 15),
@@ -138,7 +169,7 @@ class _PetPageState extends State<PetPage> {
                     const SizedBox(height: 15),
                     _buildTextField(
                       _idadeController,
-                      "Idade",
+                      "Idade (anos)",
                       Icons.cake_outlined,
                       keyboard: TextInputType.number,
                     ),
@@ -148,10 +179,10 @@ class _PetPageState extends State<PetPage> {
                     }),
                     const SizedBox(height: 30),
                     ElevatedButton.icon(
-                      onPressed: _savePet,
+                      onPressed: _isSaving ? null : _savePet,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
-                        minimumSize: Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
@@ -179,11 +210,28 @@ class _PetPageState extends State<PetPage> {
     IconData icon, {
     TextInputType keyboard = TextInputType.text,
   }) {
+    List<TextInputFormatter> inputFormatters = [];
+    
+    if (label == "Nome" || label == "Raça") {
+      inputFormatters = [
+        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZÀ-ÿ\s]')),
+      ];
+    } else if (label == "Idade (anos)") {
+      inputFormatters = [
+        FilteringTextInputFormatter.digitsOnly,
+      ];
+    }
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboard,
-      validator: (value) =>
-          (value == null || value.isEmpty) ? "Preencha o campo $label" : null,
+      inputFormatters: inputFormatters, 
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return "Preencha o campo $label";
+        }
+        return null;
+      },
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.purple),
         labelText: label,
@@ -196,7 +244,15 @@ class _PetPageState extends State<PetPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(25),
-          borderSide: BorderSide(color: Colors.purple, width: 2),
+          borderSide: const BorderSide(color: Colors.purple, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
       ),
     );
@@ -208,48 +264,47 @@ class _PetPageState extends State<PetPage> {
     String? value,
     Function(String?) onChanged,
   ) {
-    return Container(
-      alignment: Alignment.center,
-      child: DropdownButtonFormField<String>(
-        value: value,
-        onChanged: onChanged,
-        isExpanded: false, 
-        dropdownColor: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        validator: (val) =>
-            val == null || val.isEmpty ? "Selecione $label" : null,
-        items: items
-            .map(
-              (e) => DropdownMenuItem(
-                value: e,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(e, style: const TextStyle(fontSize: 16)),
-                ),
-              ),
-            )
-            .toList(),
-        decoration: InputDecoration(
-          prefixIcon: const Icon(
-            Icons.arrow_drop_down_circle,
-            color: Colors.purple,
-          ),
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.purple.shade700),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 15,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(25),
-            borderSide: BorderSide(color: Colors.purple.shade100),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(25),
-            borderSide: const BorderSide(color: Colors.purple, width: 2),
-          ),
+    return DropdownButtonFormField<String>(
+      value: value,
+      onChanged: onChanged,
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      validator: (val) =>
+          val == null || val.isEmpty ? "Selecione $label" : null,
+      items: items
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Text(e, style: const TextStyle(fontSize: 16)),
+            ),
+          )
+          .toList(),
+      decoration: InputDecoration(
+        prefixIcon: Icon(Icons.arrow_drop_down_circle, color: Colors.purple),
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.purple.shade700),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 15,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: BorderSide(color: Colors.purple.shade100),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: const BorderSide(color: Colors.purple, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(25),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
       ),
     );

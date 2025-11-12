@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (result != null) {
-      _loadPets(); 
+      _loadPets();
     }
   }
 
@@ -62,8 +62,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.grey[100],
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.purple,
-        child: Icon(Icons.add
-        , color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white),
         onPressed: () => _showPetPage(),
       ),
       body: Column(
@@ -209,10 +208,7 @@ class _HomePageState extends State<HomePage> {
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
-                      colors: [
-                        Colors.white,
-                        Colors.white,
-                      ],
+                      colors: [Colors.white, Colors.white],
                     ),
                   ),
                   child: Text(
